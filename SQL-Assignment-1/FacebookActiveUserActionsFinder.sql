@@ -24,20 +24,11 @@ INSERT INTO facebook_user_actions VALUES
 (751, 4689, 'sign-in', '03/12/2023 12:00:00')
 
 -- Solution
-DECLARE @currentMonth int = (SELECT MONTH(GETDATE()));
-DECLARE @lastMonth int = @currentMonth - 1;
-
-WITH last_month_actions AS 
-(SELECT DISTINCT user_id 
+DECLARE @currentDate datetime = GETDATE();
+SELECT MONTH(event_date) AS month, COUNT(DISTINCT user_id) AS monthly_active_users
 FROM facebook_user_actions
-WHERE MONTH(event_date) = @lastMonth), current_month_actions AS 
-	(SELECT DISTINCT user_id 
-	FROM facebook_user_actions
-	WHERE MONTH(event_date) = @currentMonth), active_users AS 
-	(SELECT DISTINCT l.user_id 
-	FROM last_month_actions AS l 
-	INNER JOIN current_month_actions AS c ON l.user_id = c.user_id
-	INNER JOIN facebook_user_actions AS a ON c.user_id = a.user_id 
-	WHERE a.event_type IN ('sign-in', 'like', 'comment') AND MONTH(a.event_date) = @currentMonth)
-	SELECT @currentMonth AS MONTH, COUNT(*) AS monthly_active_users 
-	FROM active_users;
+WHERE event_type IN ('sign-in', 'like', 'comment')
+    AND MONTH(event_date) IN (MONTH(@currentDate), MONTH(@currentDate) - 1)
+    AND YEAR(event_date) = YEAR(@currentDate)
+GROUP BY MONTH(event_date)
+ORDER BY month ASC;
